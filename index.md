@@ -31,7 +31,14 @@ the technology allows running untrusted code that could misbehave.
 
 ---
 
-### Example: WebPerl
+<img src="img/webperl.png">
+
+[WebPerl](https://webperl.zero-g.net) lets you script your web application with Perl
+just like you might already be doing in JavaScript.
+
+---
+
+<img src="img/webperl.png"><br>
 
 <textarea class="perl-source" rows="10" cols="30">
 #perl
