@@ -59,7 +59,51 @@
         }
       }).then( function() {
 
+        var ctrl = false;
+
+        $('.perl-source').on('keydown', function (e) {
+          if(e.key == "Control")
+            ctrl = true;
+          else if(ctrl && e.key == "x")
+          {
+            Perl.eval(e.target.value);
+            e.preventDefault();
+          }
+          else if(ctrl && e.key == "z")
+          {
+            $('.perl-source').hide();
+            $('.js-source').show();
+          }
+        });
+        $('.perl-source').on('keyup', function (e) {
+          if(e.key == "Control")
+            ctrl = false;
+        });
+
+        $('.js-source').on('keydown', function (e) {
+          if(e.key == "Control")
+            ctrl = true;
+          else if(ctrl && e.key == "x")
+          {
+            eval(e.target.value);
+            e.preventDefault();
+          }
+          else if(ctrl && e.key == "z")
+          {
+            $('.perl-source').show();
+            $('.js-source').hide();
+          }
+        });
+        $('.perl-source').on('keyup', function (e) {
+          if(e.key == "Control")
+            ctrl = false;
+        });
+
+/*
         $('.perl-source').on('keypress', function (e) {
+          console.log(e.key);
+          console.log(e.shiftKey);
+          console.log(e.metaKey);
           if(e.ctrlKey)
           {
             if(e.key == "x") {
@@ -92,6 +136,7 @@
           return true;
         });
 
+*/
         var orig = Perl.output;
         Perl.output = function (string, chan) {
           orig(string,chan);
