@@ -32,6 +32,16 @@
       </div>
     </div>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <script src="webperl.js"></script>
+    <script type="text/perl">
+      use strict;
+      use warnings;
+      use 5.010;
+      js("console.log('Perl is ready')");
+    </script>
+
     <script src="dist/reveal.js"></script>
     <script src="plugin/notes/notes.js"></script>
     <script src="plugin/markdown/markdown.js"></script>
@@ -47,14 +57,49 @@
         markdown: {
           smartypants: true
         }
+      }).then( function() {
+
+        $('.perl-source').on('keypress', function (e) {
+          if(e.ctrlKey)
+          {
+            if(e.key == "x") {
+              Perl.eval(e.target.value);
+              return false;
+            }
+            if(e.key == 'z') {
+              $('.perl-source').hide();
+              $('.js-source').show();
+              $('section.present textarea.perl-source').first().focus();
+              return false;
+            }
+          }
+          return true;
+        });
+
+        $('.js-source').on('keypress', function(e) {
+          if(e.ctrlKey)
+          {
+            if(e.key == "x") {
+              eval(e.target.value);
+              return false;
+            }
+            if(e.key == 'z') {
+              $('.perl-source').show();
+              $('.js-source').hide();
+              return false;
+            }
+          }
+          return true;
+        });
+
+        var orig = Perl.output;
+        Perl.output = function (string, chan) {
+          orig(string,chan);
+          $('.perl-output').append(string);
+        };
+
       });
     </script>
-    <script src="webperl.js"></script>
-    <script type="text/perl">
-      use strict;
-      use warnings;
-      use 5.010;
-      say "hello from Perl\n";
-    </script>
+
   </body>
 </html>

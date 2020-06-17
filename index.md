@@ -31,6 +31,21 @@ the technology allows running untrusted code that could misbehave.
 
 ---
 
+### Example: WebPerl
+
+<textarea class="perl-source" rows="10" cols="30">
+#perl
+use strict;
+use warnings;
+use 5.010;
+say "Hello from Perl!";
+</textarea><textarea class="js-source" rows="10" cols="30" style="display: none">
+// javascript
+Perl.eval('print "Hello from JavaScript thru Perl!\n"');
+</textarea><textarea class="perl-output" rows="10" cols="30"></textarea>
+
+---
+
 ### Why WebAssembly?
 
 ---
