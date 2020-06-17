@@ -1,4 +1,4 @@
-### <img src="img/perl.svg" class="nx-icon">Perl + <img src="img/webassembly.svg" class="nx-icon">Wasm
+### <img src="img/perl.svg" class="nx-icon">Perl + <img src="img/webassembly.svg" class="nx-icon">WebAssembly
 
 Let's write Perl bindings in WebAssembly!
 
@@ -15,3 +15,71 @@ Let's write Perl bindings in WebAssembly!
 
 </div>
 
+---
+
+### What is WebAssembly?
+
+**WebAssembly** (Wasm) is a _fast_, _safe_ and _portable_ bytecode that can be used by
+web browers for performance critical situations where plain JavaScript is not appropriate.
+
+---
+
+### What is WebAssembly?
+
+**WebAssembly** can also be useful in server applications where the sandboxed nature of
+the technology allows running untrusted code that could misbehave.
+
+---
+
+### Why WebAssembly?
+
+---
+
+### How WebAssembly?
+
+```perl
+use Wasm;
+```
+
+---
+
+### Wasmtime
+
+```perl
+use Wasm::Wasmtime
+```
+
+---
+
+### How WebAssembly + Python
+
+---
+
+### How WebAssembly + Node.js
+
+---
+
+### WebAssembly vs. FFI
+
+---
+
+### WebAssembly vs. XS
+
+---
+
+### WebAssembly Interface Types
+
+---
+
+### Lucet
+
+---
+
+### Any Questions? 
+
+<div class="nx-hide-bullet">
+
+* IRC #native on irc.perl.org
+* <img src="img/github.svg"  class="nx-icon"> [github.com/perlwasm](https://github.com/perlwasm)
+
+</div>
