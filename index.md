@@ -85,11 +85,12 @@ the technology allows running untrusted code that could misbehave.
 
 ### How WebAssembly?
 
-**Wasmtime** is a rust library that implements a WebAssembly runtime.
+**Wasmtime** is a Rust library that implements a WebAssembly runtime.
 
 ---
 
 **Wasmtime** has an FFI friendly C API, which means it can easily be called from any language with a decent FFI.
+(Perl has a decent FFI by the name of Platypus)
 
 ---
 
@@ -97,7 +98,7 @@ the technology allows running untrusted code that could misbehave.
 
 ---
 
-### Call Wasm from Perl
+Call WebAssembly from Perl
 
 ```perl [1-14|4-9|12|13|14]
 use Wasm::Wasmtime;
@@ -118,7 +119,7 @@ say $add->call(1,2);  # 3
 
 ---
 
-### Call Perl from Wasm
+Call Perl from WebAssembly
 
 ```perl [1-17|5-8|11-14|16-17|19]
 use Wasm::Wasmtime;
@@ -144,7 +145,7 @@ $instance->exports->run->call(); # hello world!
 
 ---
 
-### Wasm.pm
+`Wasm.pm`
 
 ```perl [1-13|7-10|5]
 package MathStuff;
@@ -164,7 +165,7 @@ use Wasm
 
 ---
 
-### Wasm.pm
+Call `MathStuff.pm`
 
 ```perl [1-3]
 use MathStuff;
@@ -174,7 +175,7 @@ say add(1,2);  # 3
 
 ---
 
-### Wasm.pm
+Call Perl from Wasm via `Wasm.pm`
 
 ```perl [1-13|1-3|5-11|13]
 sub hello {
@@ -258,21 +259,21 @@ console.log(add(1,2));  # 3
 
 ---
 
-### perlxs
+perlxs
 
-<img src="img/perlxs.png" align="center">
-
----
-
-### perlapi
-
-<img src="img/perlapi.png" align="center">
+<iframe src="https://perldoc.perl.org/perlxs.html" style="width: 100%; height: 500px;"></iframe>
 
 ---
 
-### perlguts
+perlapi
 
-<img src="img/perlguts.png" align="center">
+<iframe src="https://perldoc.perl.org/perlapi.html" style="width: 100%; height: 500px;"></iframe>
+
+---
+
+perlguts
+
+<iframe src="https://perldoc.perl.org/perlguts.html" style="width: 100%; height: 500px;"></iframe>
 
 ---
 
@@ -317,10 +318,32 @@ void process_list(foo_t *);
 
 <div class="nx-hide-bullet">
 
-* &#10060; Wasmtime is (so far) only 64bit Linux, macOS and Windows
-* &#9989; Wasm *can* access the filesystem via WASI (if allowed)
+* &#10060; Wasmtime only 64bit Linux, macOS and Windows
+* &#9989; Wasm is applicable to lots of languages
+ * Host: Perl / Python / Node.js
+ * Guest: C / Rust / Go
+
+</deiv>
+
+---
+
+### Good/Bad of Wasm
+
+<div class="nx-hide-bullet">
+
+* &#9989; Wasm *can* access the filesystem via WASI
 * &#10060; Wasm does not typically have access to the network.
-* &#9989; Wasm is applicable to lots of languages (C, Rust, Go)
+ * Porting SQLite to Wasm is easy(ish)
+ * Porting libcurl probably hard
+
+</div>
+
+---
+
+### Good/Bad of Wasm
+
+<div class="nx-hide-bullet">
+
 * &#9989; Wasm bindings are almost effortless
 * &#9989; Wasm has good introspection
 
