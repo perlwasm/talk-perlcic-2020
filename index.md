@@ -24,10 +24,11 @@ web browers for performance critical situations where plain JavaScript is not ap
 
 ---
 
-### What is WebAssembly?
+<img src="diagrams/unixcompile.png">
 
-**WebAssembly** can also be useful in server applications where the sandboxed nature of
-the technology allows running untrusted code that could misbehave.
+---
+
+<img src="diagrams/webcompile.png">
 
 ---
 
@@ -56,6 +57,13 @@ Perl.eval(`
   say "(via Perl)!";
 `);
 </textarea><textarea class="perl-output" rows="10" cols="60"></textarea>
+
+---
+
+### What is WebAssembly?
+
+**WebAssembly** can also be useful in server applications where the sandboxed nature of
+the technology allows running untrusted code that could misbehave.
 
 ---
 
