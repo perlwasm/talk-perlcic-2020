@@ -73,16 +73,131 @@ the technology allows running untrusted code that could misbehave.
 
 ### How WebAssembly?
 
-```perl
-use Wasm;
+---
+
+<img src="diagrams/wasmtimemodel.png">
+
+---
+
+### Call Wasm from Perl
+
+```perl [1-14|4-9|12|13|14]
+use Wasm::Wasmtime;
+ 
+my $module = Wasm::Wasmtime::Module->new( wat => q{
+  (module
+   (func (export "add") (param i32 i32) (result i32)
+     local.get 0
+     local.get 1
+     i32.add)
+  )
+});
+ 
+my $instance = Wasm::Wasmtime::Instance->new($module);
+my $add = $instance->exports->add;
+say $add->call(1,2);  # 3
 ```
 
 ---
 
-### Wasmtime
+### Call Perl from Wasm
+
+```perl [1-17|5-8|11-14|16-17|19]
+use Wasm::Wasmtime;
+ 
+my $s = Wasm::Wasmtime::Store->new;
+my $module = Wasm::Wasmtime::Module->new($s, wat => q{
+  (module
+    (func $hello (import "" "hello"))
+    (func (export "run") (call $hello))
+  )
+});
+ 
+my $cb = Wasm::Wasmtime::Func->new(
+  $s, [],[],
+  sub { say "hello world!" },
+);
+ 
+my $instance = Wasm::Wasmtime::Instance
+  ->new($module,[$cb]);
+
+$instance->exports->run->call(); # hello world!
+```
+
+---
+
+### Wasm.pm
 
 ```perl
-use Wasm::Wasmtime
+package MathStuff;
+ 
+use Wasm
+  -api => 0,
+  -exporter => 'all',
+  -wat => q{ (module
+    (func (export "add") (param i32 i32) (result i32)
+      local.get 0
+      local.get 1
+      i32.add)
+  ) };
+ 
+1;
+```
+
+---
+
+### Wasm.pm
+
+```perl
+use MathStuff;
+
+say add(1,2);  # 3
+```
+
+---
+
+### Wasm.pm
+
+```perl
+sub hello {
+  print "hello world!\n";
+}
+ 
+use Wasm
+  -api => 0,
+  -wat => q{ (module
+    (func $hello (import "main" "hello"))
+    (func (export "run") (call $hello))
+  ) }
+;
+ 
+run();   # hello world!
+```
+
+---
+
+### Wasm::Hook
+
+```text
+$ cat > lib/MathStuff.wat
+(module
+  (func (export "add") (param i32 i32) (result i32)
+    local.get 0
+    local.get 1
+    i32.add)
+)
+^D
+```
+
+---
+
+### Wasm::Hook
+
+```perl
+use Wasm::Hook;
+use MathStuff;
+
+say add(1,2); # 3
 ```
 
 ---
