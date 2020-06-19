@@ -146,7 +146,7 @@ $instance->exports->run->call(); # hello world!
 
 ### Wasm.pm
 
-```perl
+```perl [1-13|7-10|5]
 package MathStuff;
  
 use Wasm
@@ -166,7 +166,7 @@ use Wasm
 
 ### Wasm.pm
 
-```perl
+```perl [1-3]
 use MathStuff;
 
 say add(1,2);  # 3
@@ -176,7 +176,7 @@ say add(1,2);  # 3
 
 ### Wasm.pm
 
-```perl
+```perl [1-13|1-3|5-11|13]
 sub hello {
   print "hello world!\n";
 }
@@ -196,8 +196,9 @@ run();   # hello world!
 
 ### Wasm::Hook
 
-```text
-$ cat > lib/MathStuff.wat
+```text [1-11|2-9|10|11]
+$ mkdir -p src lib
+$ cat > src/mathstuff.wat
 (module
   (func (export "add") (param i32 i32) (result i32)
     local.get 0
@@ -205,6 +206,8 @@ $ cat > lib/MathStuff.wat
     i32.add)
 )
 ^D
+$ plasm wat src/mathstuff.wat
+$ mv src/mathstuff.wasm lib/MathStuff.wasm
 ```
 
 ---
@@ -224,7 +227,7 @@ say add(1,2); # 3
 
 ```python
 import wasmtime.loader
-import math_stuff
+import MathStuff
 
 print(add(1,2)); # 3
 ```
@@ -234,18 +237,44 @@ print(add(1,2)); # 3
 ### How WebAssembly + Node.js
 
 ```javascript
-import { add } from 'math_stuff';
+import { add } from 'MathStuff.wasm';
 
 console.log(add(1,2));  # 3
 ```
 
 ---
 
-### WebAssembly vs. FFI
+### WebAssembly vs. XS
+
+* ️✔️ XS is XS is available anywhere Perl is
+* ❌ XS is not applicable to other languages
+* ❌ XS requires a lot of reading:
 
 ---
 
-### WebAssembly vs. XS
+### perlxs
+
+<img src="img/perlxs.png" align="center">
+
+---
+
+### perlapi
+
+<img src="img/perlapi.png" align="center">
+
+---
+
+### perlguts
+
+<img src="img/perlguts.png" align="center">
+
+---
+
+### WebAssembly vs. FFI
+
+* FFI is available most places Perl is
+* FFI is applicable to other languages (ruby, python, etc)
+* C has terrible introspection 
 
 ---
 
@@ -254,6 +283,12 @@ console.log(add(1,2));  # 3
 ---
 
 ### Lucet
+
+**Lucet** is a native WebAssembly compiler and runtime. It is designed to safely execute untrusted WebAssembly programs inside your application.
+
+---
+
+<img src="diagrams/lucetcompile.png">
 
 ---
 
