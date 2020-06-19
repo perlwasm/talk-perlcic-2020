@@ -32,6 +32,10 @@ web browers for performance critical situations where plain JavaScript is not ap
 
 ---
 
+<img src="diagrams/rustcompile.png">
+
+---
+
 <img src="img/webperl.png">
 
 [WebPerl](https://webperl.zero-g.net) lets you script your web application with Perl
@@ -67,11 +71,25 @@ the technology allows running untrusted code that could misbehave.
 
 ---
 
+<img src="diagrams/perlcompile.png">
+
+---
+
 ### Why WebAssembly?
+
+* Pretty fast
+* Pretty safe
+* Easy introspection
 
 ---
 
 ### How WebAssembly?
+
+**Wasmtime** is a rust library that implements a WebAssembly runtime.
+
+---
+
+**Wasmtime** has an FFI friendly C API, which means it can easily be called from any language with a decent FFI.
 
 ---
 
@@ -204,9 +222,22 @@ say add(1,2); # 3
 
 ### How WebAssembly + Python
 
+```python
+import wasmtime.loader
+import math_stuff
+
+print(add(1,2)); # 3
+```
+
 ---
 
 ### How WebAssembly + Node.js
+
+```javascript
+import { add } from 'math_stuff';
+
+console.log(add(1,2));  # 3
+```
 
 ---
 
