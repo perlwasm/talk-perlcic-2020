@@ -99,44 +99,6 @@
             ctrl = false;
         });
 
-/*
-        $('.perl-source').on('keypress', function (e) {
-          console.log(e.key);
-          console.log(e.shiftKey);
-          console.log(e.metaKey);
-          if(e.ctrlKey)
-          {
-            if(e.key == "x") {
-              Perl.eval(e.target.value);
-              return false;
-            }
-            if(e.key == 'z') {
-              $('.perl-source').hide();
-              $('.js-source').show();
-              $('section.present textarea.perl-source').first().focus();
-              return false;
-            }
-          }
-          return true;
-        });
-
-        $('.js-source').on('keypress', function(e) {
-          if(e.ctrlKey)
-          {
-            if(e.key == "x") {
-              eval(e.target.value);
-              return false;
-            }
-            if(e.key == 'z') {
-              $('.perl-source').show();
-              $('.js-source').hide();
-              return false;
-            }
-          }
-          return true;
-        });
-
-*/
         var orig = Perl.output;
         Perl.output = function (string, chan) {
           orig(string,chan);
