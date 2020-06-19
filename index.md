@@ -244,11 +244,17 @@ console.log(add(1,2));  # 3
 
 ---
 
-### WebAssembly vs. XS
+### Good/Bad of XS
 
-* ️✔️ XS is XS is available anywhere Perl is
-* ❌ XS is not applicable to other languages
-* ❌ XS requires a lot of reading:
+<div class="nx-hide-bullet">
+
+* &#9989; XS is XS is available anywhere Perl is
+* &#9989; XS is great for extending Perl itself
+* &#10060; XS is not applicable to other languages
+* &#10060; XS is tedious for APIs with lots of functions
+* &#10060; XS requires a lot of reading:
+
+</div>
 
 ---
 
@@ -270,11 +276,55 @@ console.log(add(1,2));  # 3
 
 ---
 
-### WebAssembly vs. FFI
+### Good/Bad of FFI
 
-* FFI is available most places Perl is
-* FFI is applicable to other languages (ruby, python, etc)
-* C has terrible introspection 
+<div class="nx-hide-bullet">
+
+* &#9989; FFI is available on all modern Perl platform
+* &#9989; FFI is applicable to other languages (ruby, python, etc)
+* &#10060; XS is tedious for APIs with lots of functions
+* &#10060; C has terrible introspection 
+
+</div>
+
+---
+
+### C and terrible introspection
+
+```c [1-17|4-5|7|9|11-15]
+#ifndef FOO_H
+#define FOO_H
+
+#define MODE1 1
+#define MODE2 2
+
+int add(int,int);
+
+void print_string(const char *);
+
+typedef strict {
+  ...
+} foo_t;
+
+void process_list(foo_t *);
+
+#endif
+```
+
+---
+
+### Good/Bad of Wasm
+
+<div class="nx-hide-bullet">
+
+* &#10060; Wasmtime is (so far) only 64bit Linux, macOS and Windows
+* &#9989; Wasm *can* access the filesystem via WASI (if allowed)
+* &#10060; Wasm does not typically have access to the network.
+* &#9989; Wasm is applicable to lots of languages (C, Rust, Go)
+* &#9989; Wasm bindings are almost effortless
+* &#9989; Wasm has good introspection
+
+</div>
 
 ---
 
