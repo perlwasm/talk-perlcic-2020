@@ -365,8 +365,8 @@ void process_list(foo_t *);
 
 * &#9989; Wasm *can* access the filesystem via WASI
 * &#10060; Wasm does not typically have access to the network.
- * Porting SQLite to Wasm is easy(ish)
- * Porting libcurl probably hard
+ * Porting SQLite or ImageMagik to Wasm is easy(ish)
+ * Porting libcurl probably hard (for now)
 
 </div>
 
@@ -396,17 +396,118 @@ void process_list(foo_t *);
 
 ---
 
-Passing strings from Perl to WebAssembly
+Passing strings from Perl to WebAssembly<br>
+(the C part)
 
-```perl
-use Wasm;
+```c [1-23|5|7-10|12-15|17-23|19|20|21|22]
+#include &lt;stdlib.h>
+#include &lt;stdio.h>
+#include &lt;string.h>
 
-# TODO
+#define EXPORT __attribute__ ((visibility ("default")))
+
+EXPORT void *
+_allocate(size_t size) {
+  return malloc(size);
+}
+
+EXPORT void
+_deallocate(void* ptr) {
+  free(ptr);
+}
+
+EXPORT char *
+_greet(const char *subject) {
+  int len = strlen(subject) + strlen("Hello, ") + 1;
+  char *greeting = malloc(len);
+  snprintf(greeting, len, "Hello, %s", subject);
+  return greeting;
+}
 ```
 
 ---
 
-### WebAssembly Interface Types
+Passing strings from Perl to WebAssembly<br>
+(the Perl part)
+
+```perl [1-31|19|20|22|24-27|29-30|32]
+package Greet;
+
+use strict;
+use warnings;
+use FFI::Platypus;
+use FFI::Platypus::Memory qw( strcpy );
+use base qw( Exporter );
+use Wasm
+  -api => 0,
+  -self
+;
+
+our @EXPORT = qw( greet );
+
+sub greet
+{
+  my($subject) = @_;
+
+  my $input_offset = _allocate(length($subject) + 1);
+  strcpy( $memory->address + $input_offset, $subject );
+
+  my $output_offset = _greet($input_offset);
+
+  my $greeting = FFI::Platypus->new->cast(
+    'opaque', 'string', 
+    $memory->address + $output_offset
+  );
+
+  _deallocate($input_offset);
+  _deallocate($output_offset);
+
+  return $greeting;
+}
+
+1;
+```
+
+---
+
+Passing strings from Perl to WebAssembly<br>
+(using it)
+
+
+```perl [1-3]
+use Greet;
+
+say greet("Perl!");  # Hello, Perl!
+```
+
+
+---
+
+WebAssembly **Interface Types** will allow host languages to call into WebAssembly pass strings other types without copies
+
+---
+
+This works because most languages store strings in the same way in linear memory
+
+---
+
+Objects can be stored as pointers...
+
+---
+
+Arrays should also be doable.
+
+---
+
+Passing strings from Perl to WebAssembly<br>
+(aspirational)
+
+```perl
+user Wasm::Hook;
+use Greet;
+
+say greet("Perl!");  # Hello, Perl!
+```
 
 ---
 
