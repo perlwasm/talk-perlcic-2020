@@ -38,7 +38,7 @@ web browers for performance critical situations where plain JavaScript is not ap
 
 <img src="img/webperl.png">
 
-[WebPerl](https://webperl.zero-g.net) lets you script your web application with Perl
+**WebPerl** (https://webperl.zero-g.net) lets you script your web application with Perl
 just like you might already be doing in JavaScript.
 
 ---
@@ -195,7 +195,7 @@ run();   # hello world!
 
 ---
 
-### Wasm::Hook
+Creating zero-effort Wasm bindings with `Wasm::Hook`
 
 ```text [1-11|2-9|10|11]
 $ mkdir -p src lib
@@ -213,7 +213,7 @@ $ mv src/mathstuff.wasm lib/MathStuff.wasm
 
 ---
 
-### Wasm::Hook
+Calling zero-effort Wasm bindings with `Wasm::Hook`
 
 ```perl
 use Wasm::Hook;
@@ -245,15 +245,22 @@ console.log(add(1,2));  # 3
 
 ---
 
+### Related Tech
+
+**XS** and **FFI** along with Wasm are different types of Foreign Function interfaces.
+
+---
+
 ### Good/Bad of XS
 
 <div class="nx-hide-bullet">
 
-* &#9989; XS is XS is available anywhere Perl is
-* &#9989; XS is great for extending Perl itself
-* &#10060; XS is not applicable to other languages
-* &#10060; XS is tedious for APIs with lots of functions
-* &#10060; XS requires a lot of reading:
+* &#9989; Native to Perl
+* &#9989; Available everywhere Perl is
+* &#9989; Great for extending Perl itself
+* &#10060; Not applicable to other languages
+* &#10060; Tedious for APIs with lots of functions
+* &#10060; Requires a lot of reading:
 
 </div>
 
@@ -290,7 +297,16 @@ perlguts
 
 ---
 
-### C and terrible introspection
+**libclang** could potentially reduce the tedium of writing FFI bindings
+by parsing C `.h` files for type and function declerations.
+
+---
+
+Even so, most C libraries will require at least *some* human intervention.
+
+---
+
+C has terrible introspection
 
 ```c [1-17|4-5|7|9|11-15]
 #ifndef FOO_H
@@ -348,6 +364,19 @@ void process_list(foo_t *);
 * &#9989; Wasm has good introspection
 
 </div>
+
+---
+
+### Good/Bad of Wasm
+
+<div class="nx-hide-bullet">
+
+* &#10060; Supported types: i32, i64, f32, f64<sup>*</sup>
+* &#10060; Strings, arrays require some manual intervention<sup>*</sup>
+
+</div>
+
+<small style="margin-left: 60%; margin-top: 50px;"><sup>*</sup>Hopefully just until...</small>
 
 ---
 
