@@ -20,7 +20,7 @@ Let's write Perl bindings in WebAssembly!
 ### What is WebAssembly?
 
 **WebAssembly** (Wasm) is a _fast_, _safe_ and _portable_ bytecode that can be used by
-web browers for performance critical situations where plain JavaScript is not appropriate.
+web browers for performance critical situations where plain JavaScript is not appropriate
 
 ---
 
@@ -39,7 +39,7 @@ web browers for performance critical situations where plain JavaScript is not ap
 <img src="img/webperl.png">
 
 **WebPerl** (https://webperl.zero-g.net) lets you script your web application with Perl
-just like you might already be doing in JavaScript.
+just like you might already be doing in JavaScript
 
 ---
 
@@ -67,7 +67,7 @@ Perl.eval(`
 ### What is WebAssembly?
 
 **WebAssembly** can also be useful in server applications where the sandboxed nature of
-the technology allows running untrusted code that could misbehave.
+the technology allows running untrusted code that could misbehave
 
 ---
 
@@ -85,12 +85,15 @@ the technology allows running untrusted code that could misbehave.
 
 ### How WebAssembly?
 
-**Wasmtime** is a Rust library that implements a WebAssembly runtime.
+**Wasmtime** is a Rust library that implements a WebAssembly runtime
 
 ---
 
-**Wasmtime** has an FFI friendly C API, which means it can easily be called from any language with a decent FFI.
-(Perl has a decent FFI by the name of Platypus)
+**Wasmtime** has an FFI friendly C API, which means it can easily be called from any language with an FFI
+
+---
+
+**FFI::Platypus** is an FFI for Perl
 
 ---
 
@@ -245,9 +248,21 @@ console.log(add(1,2));  # 3
 
 ---
 
+TODO: plasm
+
+---
+
+TODO: WASI
+
+---
+
+TODO: sandboxed WASI
+
+---
+
 ### Related Tech
 
-**XS** and **FFI** along with Wasm are different types of Foreign Function interfaces.
+**XS**, **FFI** and Wasm are different types of Foreign Function interfaces
 
 ---
 
@@ -334,7 +349,8 @@ void process_list(foo_t *);
 
 <div class="nx-hide-bullet">
 
-* &#10060; Wasmtime only 64bit Linux, macOS and Windows
+* &#10060; x86_64 and Arm 64 only
+* &#10060; Binaries only for Linux, macOS and Windows
 * &#9989; Wasm is applicable to lots of languages
  * Host: Perl / Python / Node.js
  * Guest: C / Rust / Go
@@ -380,13 +396,23 @@ void process_list(foo_t *);
 
 ---
 
+Passing strings from Perl to WebAssembly
+
+```perl
+use Wasm;
+
+# TODO
+```
+
+---
+
 ### WebAssembly Interface Types
 
 ---
 
 ### Lucet
 
-**Lucet** is a native WebAssembly compiler and runtime. It is designed to safely execute untrusted WebAssembly programs inside your application.
+**Lucet** is a native WebAssembly compiler and runtime. It is designed to safely execute untrusted WebAssembly programs inside your application
 
 ---
 
@@ -398,7 +424,8 @@ void process_list(foo_t *);
 
 <div class="nx-hide-bullet">
 
-* IRC #native on irc.perl.org
+* IRC **#native** on **irc.perl.org**
 * <img src="img/github.svg"  class="nx-icon"> [github.com/perlwasm](https://github.com/perlwasm)
+* <img src="img/twitter.svg" class="nx-icon"> [@plicease](https://twitter.com/plicease)
 
 </div>
