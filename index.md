@@ -97,6 +97,10 @@ the technology allows running untrusted code that could misbehave
 
 ---
 
+**Wasm::Wasmtime** is a set of Wasmtime bindings for Perl written using FFI::Platypus
+
+---
+
 <img src="diagrams/wasmtimemodel.png">
 
 ---
