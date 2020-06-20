@@ -507,7 +507,7 @@ Passing strings from Perl to WebAssembly<br>
 (aspirational)
 
 ```perl
-user Wasm::Hook;
+use Wasm::Hook;
 use Greet;
 
 say greet("Perl!");  # Hello, Perl!
