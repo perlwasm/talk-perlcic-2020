@@ -180,7 +180,7 @@ nature of the technology running untrusted code that could misbehave
 
 <img src="img/fastly.svg"  class="nx-icon"> Fastly
 
-TODO: Fastly diagram
+<img src="diagrams/fastly.png">
 
 Note:
 For example at Fastly, which is a content delivery network, we allow customers to provide
@@ -502,11 +502,109 @@ sufficiently advanced Wasmtime bindings.
 
 ---
 
-TODO: plasm
+**App::plasm** is a CLI tool for WebAssembly binaries
+
+Note:
+plasm or PerL wASM is a command-line tool for webassembly binaries.
 
 ---
 
-TODO: WASI
+```c [1-9]
+#include &lt;stdio.h>
+
+int
+main(int argc, char *argv[])
+{
+  printf("Hello World!\n");
+  for(int i=1; i&lt;argc; i++)
+    printf("argv[%d] = \"%s\"\n", i, argv[i]);
+}
+```
+
+Note:
+Given a very simple C program that prints a greeting and the command-line arguments passed to it
+
+---
+
+```
+$ wacc hello.c -o hello.wasm
+$ plasm run hello.wasm one two
+Hello World!
+argv[1] = "one"
+argv[2] = "two"
+```
+
+Note:
+We can compile the C into a WebAssembly binary and run it with the plasm run subcommand.  It works exactly as if it were a native C program.
+
+---
+
+```
+$ plasm dump hello.wasm 
+(module
+  (func (import "wasi_snapshot_preview1" "proc_exit") (param i32))
+  (func (import "wasi_snapshot_preview1" "args_sizes_get") (param i32 i32) (result i32))
+  (func (import "wasi_snapshot_preview1" "args_get") (param i32 i32) (result i32))
+  (func (import "wasi_snapshot_preview1" "fd_seek") (param i32 i64 i32 i32) (result i32))
+  (func (import "wasi_snapshot_preview1" "fd_close") (param i32) (result i32))
+  (func (import "wasi_snapshot_preview1" "fd_fdstat_get") (param i32 i32) (result i32))
+  (func (import "wasi_snapshot_preview1" "fd_write") (param i32 i32 i32 i32) (result i32))
+  (memory (export "memory") 2)
+  (func (export "_start") )
+)
+```
+
+Note:
+We can also use the plasm dump subcommand to print out the interface for this WebAssembly binary.  As you might expect there is a _start
+function, which is what makes it a program and not just a library.  There is also a memory export so that the host language can interact
+with the WebAssembly's linear memory region.  This program also imports a number of functions that you might think would interact with
+the operating system.  In this case you'd be right.  proc_exit implemnts the C exit function.  There are a copuple of argument processing
+function that lets the program get the command-line arguments.  There are a number of functions with the fd_ prefix that do IO.
+
+---
+
+```
+$ cat hello.c          
+#include <stdio.h>
+
+int
+main() { }
+$ wacc -o hello.wasm hello.c
+$ plasm dump hello.wasm     
+(module
+  (func (import "wasi_snapshot_preview1" "proc_exit") (param i32))
+  (memory (export "memory") 2)
+  (func (export "_start") )
+)
+```
+
+Note:
+Also interesting is that if we have less complicated program that doesn't query the command-line, or do IO, we get a much shorter
+list of imports.  That is because WebAssembly only generates code and interfaces for the objects that get used by the module.
+This makes sense since you don't want to ship the entire C library to a web browser if you are only using bits of it.
+
+All of these system functions are imported from wasi_snapshot_preview1, what is that?
+
+---
+
+**WebAssembly System Interface** (**WASI**) is a simple interface (ABI and API) designed by Mozilla.
+
+Note:
+The WebAssembly System Interface or WASI is a simple ABI and API designed by Mozilla.
+
+---
+
+**WASI** is portable to any platform
+
+Note:
+WASI is portable to any platform
+
+---
+
+**WASI** provides POSIX features like file I/O constrained by capability-based security.
+
+Note:
+It provides a POSIX features like file I/O.  System resources like file I/O can be configured by the WebAssembly runtime.
 
 ---
 
