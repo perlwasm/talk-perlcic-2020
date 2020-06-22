@@ -613,17 +613,56 @@ It provides a POSIX features like file I/O.  System resources like file I/O can 
 
 ---
 
-TODO: sandboxed WASI
+**Wasmtime** comes with a configurable *WASI*
+
+```perl [1-16|7|8-9|10|12-16]
+use Wasm::Wasmtime;
+
+my $store = Wasm::Wasmtime::Store->new;
+my $config = Wasm::Wasmtime::WasiConfig->new;
+
+$config
+  ->set_env({ FOO => 1, BAR => 2 })
+  ->set_stdout("/tmp/wasi-stdout.txt")
+  ->set_stderr("/tmp/wasi-stderr.txt")
+  ->preopen_dir("/","/tmp/wasi-sandbox");
+
+my $wasi = Wasm::Wasmtime::WasiInstance->new(
+  $store,
+  "wasi_snapshot_preview1",
+  $config
+);
+```
+
+Note:
+Wasmtime comes with a default WASI that can be configured for your security needs.
+Wasm.pm by default gives full access to the local system, though I plan on adding an isolation option
+which allows specific modules to be isolated from other WebAssembly and from the operating system.
+Using the lower level Wasm::Wasmtime interface we grant access to specific resources.
+
+1. In this example we set the environment using a hash reference, instead of using the real system's environment
+2. We can redirect the output streams to files on disk
+3. And map the guest's root file system to a protected directory on the host.
+4. Once configured we can create a WASI instance that can be used with the Wasmtime linker.
 
 ---
 
-### Related Tech
+We could also implement our own **WASI** in *Perl*
 
-**XS**, **FFI** and Wasm are different types of Foreign Function interfaces
+Note:
+We could also implement our own WASI in PERL.  If we wanted to have a virtual file system backed by the network,
+or if we wanted command-line options come from a database for example.  There are lots of possible applications.
 
 ---
 
-### Good/Bad of XS
+**XS**, **FFI** and Wasm are different types of Foreign Function Interfaces
+
+Note:
+XS, FFI and Wasm are different types of Foreign Function Interfaces, each with their pluses and minuses
+
+---
+
+**XS** 
 
 <div class="nx-hide-bullet">
 
@@ -632,53 +671,59 @@ TODO: sandboxed WASI
 * &#9989; Great for extending Perl itself
 * &#10060; Not applicable to other languages
 * &#10060; Tedious for APIs with lots of functions
-* &#10060; Requires a lot of reading:
+* &#10060; Steep learning curve
+* &#10060; and lots of gotchas
 
 </div>
 
----
-
-perlxs
-
-<iframe src="https://perldoc.perl.org/perlxs.html" style="width: 100%; height: 500px;"></iframe>
-
----
-
-perlapi
-
-<iframe src="https://perldoc.perl.org/perlapi.html" style="width: 100%; height: 500px;"></iframe>
+Note:
+1. XS is native to Perl, which means that it is available everywhere that Perl is
+2. It is great for extending Perl itself
+3. It is a bit esoteric though and quite different from the way most programming languages are
+extended, so it isn't applicable to most other languages or technologies
+4. It can be very tedius to write Perl bindings for APIs with lots of functions.
+5. The full XS API... if you could call it that... is quite complicated and has a very steep learning curve...
+6. and even for experienced XS programmers there are lots of sharp edges and gotchas.
 
 ---
 
-perlguts
-
-<iframe src="https://perldoc.perl.org/perlguts.html" style="width: 100%; height: 500px;"></iframe>
-
----
-
-### Good/Bad of FFI
+**FFI** and **FFI::Platypus**
 
 <div class="nx-hide-bullet">
 
-* &#9989; FFI is available on all modern Perl platform
-* &#9989; FFI is applicable to other languages (ruby, python, etc)
-* &#10060; XS is tedious for APIs with lots of functions
-* &#10060; C has terrible introspection 
+* &#9989; Available on all modern Perl platform
+* &#9989; Applicable to other languages (ruby, python, etc)
+* &#10060; Tedious for APIs with lots of functions
+* &#10060; C is terrible at introspection 
 
 </div>
+
+Note:
+1. Platypus is available on all modern Perl platforms, probably any that you are likely to use in practice.
+2. I find that FFI bindings are fairly easy to port from language to language.  I have often borrowed FFI
+bindings from Ruby for use in Perl.  Wasm::Wasmtime itself was heavily influrnced by the already existing Python
+bindings for the same library.
+3. Like XS it can be very tedius to write Perl bindings for APIs with lots of functions.
+4. Although one goal of the Platypus project is to be language neutral, most libraries that you are likely to 
+write bindings for have a C interface, and C is terrible at introspection.
 
 ---
 
 **libclang** could potentially reduce the tedium of writing FFI bindings
 by parsing C `.h` files for type and function declerations.
 
+Note:
+libclang, which is an API to the clang parser could potentially reduce the tedium of writing FFI bindings
+by parsing C `.h` files for type and function declerations.
+
 ---
 
 Even so, most C libraries will require at least *some* human intervention.
 
----
+Note:
+Still, most C libraries require at least some human intervention to implemnet correctly.
 
-C has terrible introspection
+---
 
 ```c [1-17|4-5|7|9|11-15]
 #ifndef FOO_H
@@ -691,7 +736,7 @@ int add(int,int);
 
 void print_string(const char *);
 
-typedef strict {
+typedef struct {
   ...
 } foo_t;
 
@@ -700,23 +745,54 @@ void process_list(foo_t *);
 #endif
 ```
 
+Note:
+Let me give you a sense of why by looking at this header file.
+
+1. Constants are often defined using the C pre-processor, which means the compiler (and libclang) dont even see them.
+That means if you want to introspect for constants you have to use another tool like the C pre-processor itself.
+2. For a simple function that takes basic non-pointer, non-array types you are golden, there aren't many ways this add function
+could be called.
+3. Likewise this print_string function is pretty obvious.  a const char star is usually a string, although technically it could
+be a pointer to a single eight bit byte.
+4. This process_list function obviously takes a list of structs from the name, but there is no way for an automated tool to
+know that.
+
 ---
 
-### Good/Bad of Wasm
+**Wasmtime** 
 
 <div class="nx-hide-bullet">
 
-* &#10060; x86_64 and Arm 64 only
-* &#10060; Binaries only for Linux, macOS and Windows
+* &#9989; x86_64 and Arm64 are supported
+* &#9989; Binaries for Linux, macOS and Windows
+* &#10060; No 32bit support
+* &#10060; Limited support for other operating systems (for now)
+
+</div>
+
+Note:
+For Wasmtime, the good news is that the most common CPUs and platforms are supported.
+Intel and Arm 64 bit, Linux, macOS and Windows.
+Unfortunately if you are on 32 bit or on a less common operating system you are out of luck.
+
+---
+
+**Wasmtime**
+
+<div class="nx-hide-bullet">
+
 * &#9989; Wasm is applicable to lots of languages
  * Host: Perl / Python / Node.js
  * Guest: C / Rust / Go
 
 </deiv>
 
+Note:
+On the other hand a lot of modern languages are supported as both hosts and guests.
+
 ---
 
-### Good/Bad of Wasm
+**Wasmtime**
 
 <div class="nx-hide-bullet">
 
@@ -727,9 +803,17 @@ void process_list(foo_t *);
 
 </div>
 
+Note:
+1. As we showed with the WASI interface, WebAssembly can access the filesystem, or at least some filesystem
+that might be virtualized.
+2. It doesn't typically have direct access to the network unless you write bindings for it
+3. Which means things like SQLite or ImageMagik should be easyish to port to webAssembly,
+4. But something like libcurl would be quite difficult.
+
+
 ---
 
-### Good/Bad of Wasm
+**Wasmtime**
 
 <div class="nx-hide-bullet">
 
@@ -738,9 +822,13 @@ void process_list(foo_t *);
 
 </div>
 
+Note:
+1. The really great thing about WebAssembly is that the bindings themselves are almost effortless.
+2. As I showed before, thanks to the security needs of WebAssembly, introspection is quite good.
+
 ---
 
-### Good/Bad of Wasm
+**Wasmtime**
 
 <div class="nx-hide-bullet">
 
@@ -749,7 +837,12 @@ void process_list(foo_t *);
 
 </div>
 
-<small style="margin-left: 60%; margin-top: 50px;"><sup>*</sup>Hopefully just until...</small>
+
+<small style="margin-left: 60%; margin-top: 50px;"><sup>*</sup>For now</small>
+
+Note:
+1. Only basic number types are supported.
+2. Strings, arrays typically require peeking into the WebAssembly's linear memory region, which at least we have access to.
 
 ---
 
@@ -781,6 +874,18 @@ _greet(const char *subject) {
   return greeting;
 }
 ```
+
+Note:
+Here is an example of how you would write some bindings to a library that takes strings as input and output.
+
+1. First we need to tell the C compiler which symbols should be exported using this incantation.
+2. Next we write a wrapper around the malloc
+3. and free functions so that we can call them from Perl space.
+4. Now we have a function that takes a subject and returns a greeting to that subject.
+5. So we compute the length of the output string
+6. Allocate the memory
+7. Create the greeting from a template
+8. And return it.
 
 ---
 
@@ -825,6 +930,16 @@ sub greet
 1;
 ```
 
+Note:
+We aren't done yet though in Perl
+
+1. We have to allocate space for the input string in the WebAssembly memory region
+2. Copy our Perl string into WebAssembly memory
+3. Call the greet function
+4. Convert the return value back into a Perl string
+5. Free the input and output strings in WebAssembly memory
+6. And finally return the greeting.  After dealing with numbers, the complexity with working with strings makes me want to cry.
+
 ---
 
 Passing strings from Perl to WebAssembly<br>
@@ -837,21 +952,36 @@ use Greet;
 say greet("Perl!");  # Hello, Perl!
 ```
 
+Note:
+But we can finally call our WebAssembly that works with strings from perl.
 
 ---
 
 WebAssembly **Interface Types** will allow host languages to call into WebAssembly pass strings other types without copies
 
+Note:
+WebAssembly Interface Types promises to address this.  Interface Types provide an extra layer inside the WebAssembly binary
+that tell the host how to translate complicated types like strings without having to make copies where possible.
+
 ---
 
 This works because most languages store strings in the same way in linear memory
+
+Note:
+This works because most languages store strings in more or less the same way in linear memory.
 
 ---
 
 Objects can be stored as pointers...
 
+Note:
+Objects can be stored as pointers...
+
 ---
 
+Arrays should also be doable.
+
+Note:
 Arrays should also be doable.
 
 ---
@@ -866,26 +996,50 @@ use Greet;
 say greet("Perl!");  # Hello, Perl!
 ```
 
+Note:
+With Interface Types we should be able to drop the explicit memory allocation wrappers and the Greet.pm file,
+and go back to just calling the WebAssembly from Perl.
+
 ---
 
 **Lucet** is a native WebAssembly compiler and runtime.
 
+Note:
+Another interesting piece of tech is the Lucet compiler that was developed in house at Fastly and is now
+opensource.  Lucet is a native WebAssembly compiler and runtime.
+
 ---
 
 **Lucet** ahead of time compiles *WebAssembly* to native x86_64 code for even better performance
+
+Note:
+Lucet ahead of time compiles WebAssembly to native 64 bit intel for even better performance.
 
 ---
 
 **Lucet** binaries have the same sandbox safety as regular WebAssembly runtimes, so it is safe
 to run untrusted WebAssembly inside your application.
 
+Note:
+At the same time Lucet binaries have the same sandbox safety as regular WebAssembly runtimes, so
+it is safe to run untrusted WebAssembly inside your application, provided that you configure with
+appropriate limits.
+
 ---
 
 <img src="diagrams/lucetcompile.png">
 
+Note:
+Here is the same diagram from before, except now someone (doesn't have to be you) compiles a program into
+WebAssembly, which is then converted into a dynamic library by Lucet.  The resulting dynamic library can
+be run using the Lucet runtime command-line interface if it has a _start function, or called from another
+programming language.
+
+There are no Perl bindings for any of this, but there might be some useful applications for this technology.
+
 ---
 
-### Any Questions? 
+Questions? 
 
 <div class="nx-hide-bullet">
 
@@ -894,3 +1048,10 @@ to run untrusted WebAssembly inside your application.
 * <img src="img/twitter.svg" class="nx-icon"> [@plicease](https://twitter.com/plicease)
 
 </div>
+
+Note:
+That is all that I have for today.  If you are interested in WebAssembly, you should definitely come join us on
+that IRC #native channel, or the perlwasm github organization.  The #native channel is also good to discuss Alien
+and Platypus tech if that sounds interesting.
+
+Any questions?
