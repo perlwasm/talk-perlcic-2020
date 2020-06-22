@@ -354,7 +354,7 @@ function that we will have to provide from Perl.
 
 `Wasm.pm`
 
-```perl [1-13|7-10|5]
+```perl [1-13|7-11|5]
 package MathStuff;
  
 use Wasm
@@ -366,8 +366,6 @@ use Wasm
       local.get 1
       i32.add)
   ) };
- 
-1;
 ```
 
 Note:
@@ -456,7 +454,7 @@ right tools this could also be C, Rust or Go.
 
 Calling zero-effort Wasm bindings with `Wasm::Hook`
 
-```perl
+```perl [1-4]
 use Wasm::Hook;
 use MathStuff;
 
@@ -474,7 +472,7 @@ having to recompile our module.
 
 ### How WebAssembly + Python
 
-```python
+```python [1-4]
 import wasmtime.loader
 import MathStuff
 
@@ -489,7 +487,7 @@ Python.
 
 ### How WebAssembly + Node.js
 
-```javascript
+```javascript [1-3]
 import { add } from 'MathStuff.wasm';
 
 console.log(add(1,2));  # 3
@@ -526,7 +524,7 @@ Given a very simple C program that prints a greeting and the command-line argume
 
 ---
 
-```
+```text [1-5]
 $ wacc hello.c -o hello.wasm
 $ plasm run hello.wasm one two
 Hello World!
@@ -539,7 +537,7 @@ We can compile the C into a WebAssembly binary and run it with the plasm run sub
 
 ---
 
-```
+```text [1-12|11|10|3|4-5|6-9]
 $ plasm dump hello.wasm 
 (module
   (func (import "wasi_snapshot_preview1" "proc_exit") (param i32))
@@ -555,17 +553,24 @@ $ plasm dump hello.wasm
 ```
 
 Note:
-We can also use the plasm dump subcommand to print out the interface for this WebAssembly binary.  As you might expect there is a _start
-function, which is what makes it a program and not just a library.  There is also a memory export so that the host language can interact
-with the WebAssembly's linear memory region.  This program also imports a number of functions that you might think would interact with
-the operating system.  In this case you'd be right.  proc_exit implemnts the C exit function.  There are a copuple of argument processing
-function that lets the program get the command-line arguments.  There are a number of functions with the fd_ prefix that do IO.
+We can also use the plasm dump subcommand to print out the interface for this WebAssembly binary.
+
+
+1. As you might expect there is a _start function, which is what makes it a program and not just a library.
+2. There is also a memory export so that the host language can interact with the WebAssembly's linear memory region.
+
+This program also imports a number of functions that you might think would interact with the operating system.
+In this case you'd be right.
+
+3. proc_exit implemnts the C exit function.
+4. There are a copuple of argument processing function that lets the program get the command-line arguments.
+5. There are a number of functions with the fd_ prefix that do IO.
 
 ---
 
-```
+```text [1-12|9]
 $ cat hello.c          
-#include <stdio.h>
+#include &lt;stdio.h>
 
 int
 main() { }
@@ -583,7 +588,7 @@ Also interesting is that if we have less complicated program that doesn't query 
 list of imports.  That is because WebAssembly only generates code and interfaces for the objects that get used by the module.
 This makes sense since you don't want to ship the entire C library to a web browser if you are only using bits of it.
 
-All of these system functions are imported from wasi_snapshot_preview1, what is that?
+1. All of these system functions are imported from wasi_snapshot_preview1, what is that?
 
 ---
 
@@ -854,7 +859,7 @@ Arrays should also be doable.
 Passing strings from Perl to WebAssembly<br>
 (aspirational)
 
-```perl
+```perl [1-4]
 use Wasm::Hook;
 use Greet;
 
@@ -863,9 +868,16 @@ say greet("Perl!");  # Hello, Perl!
 
 ---
 
-### Lucet
+**Lucet** is a native WebAssembly compiler and runtime.
 
-**Lucet** is a native WebAssembly compiler and runtime. It is designed to safely execute untrusted WebAssembly programs inside your application
+---
+
+**Lucet** ahead of time compiles *WebAssembly* to native x86_64 code for even better performance
+
+---
+
+**Lucet** binaries have the same sandbox safety as regular WebAssembly runtimes, so it is safe
+to run untrusted WebAssembly inside your application.
 
 ---
 
