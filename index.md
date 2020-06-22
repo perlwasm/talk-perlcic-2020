@@ -129,6 +129,40 @@ Let's try some demos!
 
 ---
 
+<canvas id="sunset" class="dos"></canvas>
+
+Note:
+In high school I wrote this graphica adventure game for DOS.  It is a set in a post-apocalyptic world where the 
+sun isn't visible through the thick radioactive haze, so I naturally called it The Last Sunset.
+
+1. First we have to check under the bed with the eye icon to get our shoes
+2. Then we can leave the bunker.
+3. The game only lets you proceed at this point if you put your shoes on, and it doesn't let you get into
+the bunker again, because as a teenage game designer I was a jerk.
+
+Anyway, you get the idea here.  On modern hardware this game only works in an enulator like Dos Box.  And
+somebody has ported Dos Box to WebAssembly and caled is js-dos.  Appropriately enough the version is 6.22!
+
+Much better and more resource intensive games can be run in the bowser this way though.  I've seen one demo of a
+WebAssembly version of Doom 3 running in the browser, and sure that game is almost 10 years old by now, but the
+3d and sound was pretty sophisticated at the time.
+
+---
+
+<a href="https://d2jta7o2zej4pf.cloudfront.net/" target="_wasm_vide_editor">WebAssembly Video Editor<sup>*</sup></a>
+
+<small><sup>*</sup>Credit to https://github.com/shamadee/web-dsp</small>
+
+
+Note:
+! Remember, to get out of full screen mode
+
+Here we have a live video demo that shows WebAssembly and JavaScript applying filters to video real-time.
+
+1. See if we can get the camera to work
+
+---
+
 <img src="img/webperl.png">
 
 **WebPerl** (https://webperl.zero-g.net) lets you script your web application with Perl
@@ -684,6 +718,15 @@ extended, so it isn't applicable to most other languages or technologies
 4. It can be very tedius to write Perl bindings for APIs with lots of functions.
 5. The full XS API... if you could call it that... is quite complicated and has a very steep learning curve...
 6. and even for experienced XS programmers there are lots of sharp edges and gotchas.
+
+---
+
+<img src="img/perlxs.png">
+
+Note:
+There is lots of documentation for XS, this for example is the perlxs man page.  Everyone read got everything on
+that page?  After reading this, and perlguts and perlapi (which are even longer) you are starting to be proficient
+in XS.
 
 ---
 
