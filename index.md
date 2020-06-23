@@ -25,13 +25,6 @@ I am known on the internet as PLICEASE
 
 ---
 
-<img src="img/fastly.svg"  class="nx-icon"> Fastly
-
-Note:
-(todo: you should work at fastly?)
-
----
-
 <img src="img/perl.svg"    class="nx-icon"> Perl
 
 Note:
@@ -915,7 +908,7 @@ Note:
 
 Note:
 1. Only basic number types are supported.
-2. Strings, arrays typically require peeking into the WebAssembly's linear memory region, which at least we have access to.
+2. Strings, arrays and nested datatypes stypically require peeking into the WebAssembly's linear memory region, which at least we have access to.
 
 ---
 
@@ -965,7 +958,7 @@ Here is an example of how you would write some bindings to a library that takes 
 Passing strings from Perl to WebAssembly<br>
 (the Perl part)
 
-```perl [1-31|19|20|22|24-27|29-30|32]
+```perl [1-31|15-20|26|27|29|31-33|35-36|38]
 package Greet;
 
 use strict;
@@ -980,6 +973,13 @@ use Wasm
 
 our @EXPORT = qw( greet );
 
+{
+  # this just uses Platypus to create a utility function
+  # to convert a pointer to a C string into a Perl string.
+  my $ffi = FFI::Platypus->new( api => 1 );
+  $ffi->attach_cast( 'cstring' => 'opaque' => 'string');
+}
+
 sub greet
 {
   my($subject) = @_;
@@ -989,8 +989,7 @@ sub greet
 
   my $output_offset = _greet($input_offset);
 
-  my $greeting = FFI::Platypus->new->cast(
-    'opaque', 'string', 
+  my $greeting = cstring(
     $memory->address + $output_offset
   );
 
@@ -999,19 +998,18 @@ sub greet
 
   return $greeting;
 }
-
-1;
 ```
 
 Note:
 We aren't done yet though in Perl
 
-1. We have to allocate space for the input string in the WebAssembly memory region
-2. Copy our Perl string into WebAssembly memory
-3. Call the greet function
-4. Convert the return value back into a Perl string
-5. Free the input and output strings in WebAssembly memory
-6. And finally return the greeting.  After dealing with numbers, the complexity with working with strings makes me want to cry.
+1. This little incantation creates a perl string from a cstring, which we will need later.
+2. We have to allocate space for the input string in the WebAssembly memory region
+3. Copy our Perl string into WebAssembly memory
+4. Call the WebAssembly greet function
+5. Convert the return value back into a Perl string
+6. Free the input and output strings in WebAssembly memory
+7. And finally return the greeting.
 
 ---
 
@@ -1026,7 +1024,66 @@ say greet("Perl!");  # Hello, Perl!
 ```
 
 Note:
-But we can finally call our WebAssembly that works with strings from perl.
+We can finally call our WebAssembly that works with strings from perl.
+
+---
+
+```perl [1-29|1|9-14|11|12|13|20-21|27|22-25]
+use Wasm::Memory qw( wasm_caller_memory );
+
+{
+  use FFI::Platypus 1.00;
+  my $ffi = FFI::Platypus->new( api => 1 );
+  $ffi->attach_cast( 'cstring' => 'opaque' => 'string' );
+}
+
+sub print_wasm_string
+{
+  my $offset = shift;
+  my $memory = wasm_caller_memory;
+  print cstring($offset + $memory->address);
+}
+
+use Wasm
+  -api => 0,
+  -wat => q{
+    (module
+      (import "main" "print_wasm_string" 
+        (func $print_wasm_string (param i32)))
+      (func (export "run")
+        i32.const 0
+        call $print_wasm_string
+      )
+      (memory (export "memory") 1)
+      (data (i32.const 0) "Hello, world!\n\00")
+    )
+  },
+;
+
+```
+
+Note:
+The next trick I want to show you is calling a Perl subroutine that takes a string from WebAssembly.  This is exactly the sort
+of thing that you need to deal with by-the-way- if you were writing a WASI implementation as I was describing earlier.
+
+The thing that the callback needs to know is which memory region to read from, since there could be multiple WebAssembly modules
+in your program.
+
+1. For that context, we are going to import the wasm_caller_memory function, which is somewhat inspired by the Perl caller function.
+They both give us information about who is calling us.
+2. Next we write a function to print a wasm string.
+3. Since we can only pass numbers, we pass a memory offset
+4. We call the wasm_caller_memory function which returns the memory region that we need
+If the subroutine were called from Perl, this returns undef.
+5. With the pointer and offset we can convert the C string to a Perl string and print it out.
+6. From the WebAssembly side we import the print_wasm_string function from the main package using the appropriate
+function signature.
+7. We use a WebAssembly data segment to store the string in, though we could also use dynamically allocated memory
+8. Finally we can write our run function, which calls the perl subroutine.
+
+
+After working so easily in WebAssembly with numbers, the complexity with working with strings makes just makes me want to cry.
+Espeically as a Perl programmer where strings are sort of our thing.
 
 ---
 
@@ -1210,5 +1267,3 @@ have some limitations that would be interesting projects for those who are inter
 welcome collabortators.  The #native channel is also good to discuss Alien and Platypus tech if that sounds interesting.
 
 Any questions?
-
-TODO: full wasi impenentation example... of something?
