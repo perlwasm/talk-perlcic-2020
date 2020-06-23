@@ -142,7 +142,7 @@ of these years.
 
 But much better and more resource intensive games can be run in the bowser this same WebAssembly.  I've seen one
 demo of a WebAssembly version of Doom 3 running in the browser, and sure that game is almost 10 years old by now,
-but the 3d and sound was pretty sophisticated for a browser tab!
+but the 3d and sound is pretty sophisticated for a browser tab!
 
 ---
 
@@ -205,7 +205,8 @@ the technology allows running untrusted code that could misbehave
 
 Note:
 WebAssembly can also be useful in server or command line applications where the sandboxed
-nature of the technology running untrusted code that could misbehave
+nature of the technology allows running untrusted code that could misbehave, assuming you
+set the appropriate resource limitations
 
 ---
 
@@ -215,9 +216,11 @@ nature of the technology running untrusted code that could misbehave
 
 Note:
 For example at Fastly, which is a content delivery network, we allow customers to provide
-their own WebAssembly applications that are run on the edge.  This allows our customers
+their own WebAssembly applications that are run on our cache nodes.  This allows our customers
 to respond more quickly to their customers, in some cases, without having to go back to
-their backend servers.
+their backend servers.  Since the code is run in a WebAssembly sandbox, we don't have to
+worry about one customer taking down our cache nodes, or accessing a different customer's
+data.
 
 Previously customers could use a domain speicifc language called VCL to write their own
 custom logic at the edge, but the ability to use general purpose programming language
@@ -288,15 +291,16 @@ So I wrote Wasm::Wasmtime using Platypus
 Note:
 Here is a diagram of how some of the most important classes in wasmtime work.
 
-1. The module is a compiled in-memory representation of a WebAssembly binary.
-2. The module can contain a number of name/FuncType mappins.
+1. The module object is a compiled in-memory representation of a WebAssembly binary.
+2. The module object can contain a number of name/FuncType mappins.
 3. A FuncType is just a function signature, so this tells us what the functions are called and how to call them
-4. The module also has other useful objects that let us introspect the WebAseembly binary
-5. The MemoryType tells us the minimum and maxiumum number of pages the WebAssembly requires.
+4. The module object also contains other useful objects that let us introspect the WebAseembly binary
+5. The most important after the functions is the MemoryType.  This tells us the minimum and maxiumum number of
+pages the WebAssembly requires.
 
-1. A Wasmetime instance can be created from the module
-2. Which we can use to call Func or function objects
-3. And access the WebAssembly's memory with a data pointer and size of the region
+1. A Wasmetime instance object can be created from the module object
+2. Which we can use to actually call Func or function objects
+3. And access the WebAssembly's Memory object which gives us a data pointer and a size of the region
 4. Importantly, although we can poke around with Wasm's memory, WebAssembly cannot address memory outside of its own region
 
 ---
@@ -310,16 +314,26 @@ my $wasm = wat2wasm('(module)');
 ```
 
 Note:
-Wasmtime also has a numnber of useful utiliy functions like wat2wasm that translates WebAssembly Text, the textual
-representation of WebAssembly into WebAssembly binary which can be executed by the WebAssembly runtime.
+Wasmtime also has a number of utility functions.  wat2wasm for example, translates WebAssembly Text into WebAssembly binary.
+We need to do this translation in order for the Wasmtime runtime to be able to execute WebAssembly.
 
 1. This is the most simple WebAssembly module possible, one that doesn't do anything.
 
 ---
 
+**Wasm::Wasmtime::Linker** links together multiple WebAssembly modules
+
+Note:
+I would also like to mention the Wasmtime linker, which is a runtime linker that makes it easy for
+two or more WebAssembly modules to call each other.  I won't be showing any examples of this, but
+the higher level Wasm.pm interface uses this to offload much of the work of linking things together
+using this class.
+
+---
+
 Call WebAssembly from Perl
 
-```perl [1-14|4-9|12|13|14]
+```perl [1-14|4-9|5-8|12|13|14]
 use Wasm::Wasmtime;
  
 my $module = Wasm::Wasmtime::Module->new( wat => q{
@@ -339,18 +353,21 @@ say $add->call(1,2);  # 3
 Note:
 Lets look at some code that calls WebAssembly from Perl
 
-1. The WebAssembly text is passed into the module constructor.  This example just has a function that adds to integers together.
-This is very useful for examples, and for playing around with WebAssembly.  You can also pass WebAssembly binary in or a
-filename pointing to the location of the WebAssembly binary.
-2. We then instantiate the WebAssembly by creating an instance object.
-3. We query the instance object for the add function
-4. And now we can call it.  We pass in the values 1 and 2 and 3 is returned as you would expect.
+1. The WebAssembly text is passed into the module constructor.  
+Under the covers wat2wasm is called.
+Passing in the WebAssembly text is helpful for examples, and for experimenting with WebAssembly.
+In production you would likely want to use WebAssembly binary here, which you can pass in directly,
+or by providing a filename.
+2. The module has just one function, which adds two integers together.
+3. We then instantiate the WebAssembly by creating an instance object.
+4. We query the instance object for the add function
+5. And now we can call it.  We pass in the values 1 and 2 and 3 is returned as you would expect.
 
 ---
 
 Attaching WebAssembly from Perl
 
-```perl [1-14|4-9|12|13-14]
+```perl [1-14|13-14]
 use Wasm::Wasmtime;
 
 my $module = Wasm::Wasmtime::Module->new( wat => q{
@@ -370,13 +387,13 @@ say add(1,2);  # 3
 Note:
 If you don't want to muck about with Func objects,
 
-1. then you can attach them and call them like regular subroutines.
+1. then you can attach and call them like regular Perl subroutines.
 
 ---
 
 Call Perl from WebAssembly
 
-```perl [1-17|5-8|11-14|16-17|19]
+```perl [1-17|5-8|6|7|11-14|16-17|19]
 use Wasm::Wasmtime;
  
 my $s = Wasm::Wasmtime::Store->new;
@@ -401,11 +418,14 @@ $instance->exports->run->call(); # hello world!
 Note:
 You can also call WebAssembly from Perl!
 
-1. Again, we provide the WebAssembly text inline here.  This module has two functions, one is internal which calls the external
-function that we will have to provide from Perl.
-2. Next we create a Wasmtime func object
-3. When we create the instnace object this time, we have to provide the callback
-4. Finally we can call the WebAssembly run function which calls the Perl callack which prints out hello world.
+1. Again, we provide the WebAssembly text inline here.  This module has two functions, 
+2. One is imported from Perl called hello
+3. The other is exported from this module and called run
+4. Next we create a Wasmtime func object for our Perl callback
+5. When we create the instance object this time, we have to provide the callback.  In this case we have
+just one import, but if you have more than one you have to provide them in the same order in which
+they are declared in the WebAssembly.
+6. Finally we can call the WebAssembly run function which calls the Perl callack which prints out hello world.
 
 ---
 
@@ -429,15 +449,16 @@ Note:
 That is a lot of work though, and most of the time you don't want or need to do that level of introspection.
 That is what Wasm.pm is for.
 
-Wasm.pm doesn't expose the Wasmtime interface at all.  That is intentional, just in case we decide to change the
-implementaton later.  I prefer Wasmtime for the time being, but there are similar projects like Wasmer that might
-make sense down the line.  It might even make sense to support multiple implementation and decide at runtime which one to use.
+Wasm.pm doesn't expose the Wasmtime interface at all.  That is an intentional design decision.  Just in case we decide to
+change the lower-level implementaton later.  I prefer Wasmtime for the time being, but there are similar projects like Wasmer
+that might make sense down the line.  It might even make sense to support multiple implementation and decide at runtime which
+one to use.
 
 1. Again, we provide the WebAssembly text inline, but you could provide WebAssembly binary here, or an external WebAssembly
 file.
 2. As a convenience we use the exporter option to have all exported functions automatically exported to the calling module.
-We could also say 'ok' here to have them imported on request too.  Under the covers the Perl Exporter module is used.  That is
-an important detail I think.  Where possible I tried to make Wasm.pm use Perlish interfaces.
+We could also say 'ok' instead to have them imported on request.  Under the covers the Perl Exporter module is used to do
+the actual import.  That is an important detail I think.  Where possible I tried to make Wasm.pm use existing Perlish interfaces.
 
 ---
 
@@ -451,7 +472,7 @@ say add(1,2);  # 3
 
 Note:
 Now we can use our MathStuff module just like any other Perl module.  You don't even need to know or care what
-language or binary format is being used under the covers.
+language or binary format is being used under the covers.  This could be an XS, or FFI or even a pure-perl module.
 
 ---
 
@@ -476,16 +497,16 @@ run();   # hello world!
 Note:
 You can of course call Perl from WebAssembly using the Wasm.pm interface.
 
-1. Here we just define a Perl subroutine "hello"
-2. The WebAssembly text asks to import hello from the main package.  Notice that the WebAssembly code doesn't need to know
+1. Here we just define a Perl subroutine "hello".  This time we don't have to wrap it in a Func object.
+2. The WebAssembly asks to import hello from the main package.  Notice that the WebAssembly code doesn't need to know
 or care what language the hello function is implemented in.
-3. Finally we can call the WebAssembly run function which calls the Perl helo subroutine.
+3. Finally we can call the WebAssembly run function which calls the Perl helo subroutine, which then prints out our message.
 
 ---
 
 Zero-effort Wasm bindings with `Wasm::Hook`
 
-```text [1-11|2-9|10|11]
+```text [1-11|2-9|10]
 $ mkdir -p src lib
 $ cat > src/mathstuff.wat
 (module
@@ -495,17 +516,16 @@ $ cat > src/mathstuff.wat
     i32.add)
 )
 ^D
-$ plasm wat src/mathstuff.wat
-$ mv src/mathstuff.wasm lib/MathStuff.wasm
+$ wat2wasm &lt; src/mathstuff.wat &gt; lib/MathStuff.wasm
 ```
 
 Note:
-Honestly though, even that is too much work!  With Wasm::Hook we can reduce the boilerplate even more.
+Honestly though, even that is WAY too much work!  With Wasm::Hook we can reduce the boilerplate even more.
 
 1. We write some WebAssembly text that will implement our module.  In this case we are using WebAssembly Text, but with the
 right tools this could also be C, Rust or Go.
-2. The plasm subcommand wat uses wat2wasm to generate the WebAssembly binary.
-3. Next we move the WebAssembly binary output where you would normally expect to see the .pm for our module.
+2. We use the wat2wasm command-line tool to convert the WebAssembly text to WebAssembly binary and place it
+where you would normally expect to see the .pm if this were a pure-perl module.
 
 ---
 
@@ -519,11 +539,12 @@ say add(1,2); # 3
 ```
 
 Note:
-But we don't need to a .pm file, because Wasm::Hook installs an @INC hook finds WebAsembly binary files and generates the
+But we don't need to a .pm file, because Wasm::Hook installs an @INC hook to find WebAsembly binary files and generates the
 necessary boilerplate for us.
 
-Nice thing is that we can now take the very same WebAssembly binary and use it on any platform supported by Wasmtime without
-having to recompile our module.
+The nice thing here is that we can now take this WebAssembly binary module, and use it on any platform supported by Wasm.pm.
+You no longer have to worry about compiler options on an obsecure dialect of Unix.  You get some of the beneifts of a pure-perl
+module, with some of the performance benifits of XS or FFI.
 
 ---
 
@@ -537,7 +558,7 @@ print(add(1,2)); # 3
 ```
 
 Note:
-In fact we can reuse it in other langauges.  Python has a wasmtime.loader interface that lets us use the same module from
+In fact we can reuse it in other langauges too.  Python has a wasmtime.loader interface that lets us use the same module from
 Python.
 
 ---
@@ -577,7 +598,7 @@ main(int argc, char *argv[])
 ```
 
 Note:
-Given a very simple C program that prints a greeting and the command-line arguments passed to it
+Lets use this very simple C program that prints a greeting and the command-line arguments that are passed to it.
 
 ---
 
@@ -641,9 +662,9 @@ $ plasm dump hello.wasm
 ```
 
 Note:
-Also interesting is that if we have less complicated program that doesn't query the command-line, or do IO, we get a much shorter
+As an aside, if we have less complicated program that doesn't query the command-line, or do IO, we get a much shorter
 list of imports.  That is because WebAssembly only generates code and interfaces for the objects that get used by the module.
-This makes sense since you don't want to ship the entire C library to a web browser if you are only using bits of it.
+This makes sense since you don't want to ship the entire libc a web browser if you are only using parts of it.
 
 1. All of these system functions are imported from wasi_snapshot_preview1, what is that?
 
@@ -666,7 +687,7 @@ WASI is portable to any platform
 **WASI** provides POSIX features like file I/O constrained by capability-based security.
 
 Note:
-It provides a POSIX features like file I/O.  System resources like file I/O can be configured by the WebAssembly runtime.
+It provides POSIX features like file I/O, which can be configured for the security conscious by the WebAssembly runtime.
 
 ---
 
@@ -693,12 +714,14 @@ my $wasi = Wasm::Wasmtime::WasiInstance->new(
 
 Note:
 Wasmtime comes with a default WASI that can be configured for your security needs.
-Wasm.pm by default gives full access to the local system, though I plan on adding an isolation option
-which allows specific modules to be isolated from other WebAssembly and from the operating system.
-Using the lower level Wasm::Wasmtime interface we grant access to specific resources.
+Wasm.pm by default gives full access to the local system, though I plan on adding an isolation option.
+This will allow specific modules to be isolated from other WebAssembly modules, from Perl or the operating system.
+
+If you are using the lower-level Wasm::Wasmtime interface you can already grant specific access to specific resources
+when creating the WASI instance.
 
 1. In this example we set the environment using a hash reference, instead of using the real system's environment
-2. We can redirect the output streams to files on disk
+2. We can redirect the standard output streams to files on disk
 3. And map the guest's root file system to a protected directory on the host.
 4. Once configured we can create a WASI instance that can be used with the Wasmtime linker.
 
@@ -737,9 +760,9 @@ Note:
 1. XS is native to Perl, which means that it is available everywhere that Perl is
 2. It is great for extending Perl itself
 3. It is a bit esoteric though and quite different from the way most programming languages are
-extended, so it isn't applicable to most other languages or technologies
+extended, so it isn't applicable to most other languages or technologies.
 4. It can be very tedius to write Perl bindings for APIs with lots of functions.
-5. The full XS API... if you could call it that... is quite complicated and has a very steep learning curve...
+5. The full XS API... if you could call it an API... is quite complicated and has a very steep learning curve...
 6. and even for experienced XS programmers there are lots of sharp edges and gotchas.
 
 ---
@@ -747,9 +770,9 @@ extended, so it isn't applicable to most other languages or technologies
 <img src="img/perlxs.png">
 
 Note:
-There is lots of documentation for XS, this for example is the perlxs man page.  Everyone read got everything on
-that page?  After reading this, and perlguts and perlapi (which are even longer) you are starting to be proficient
-in XS.
+There is lots of documentation for XS, this for example is the perlxs man page.  Everyone please read everything on
+this page.  (count to ten)  Got all of that?  After reading this, and perlguts and perlapi (which are even longer)
+you are starting to be proficient in XS.
 
 ---
 
@@ -771,12 +794,13 @@ bindings from Ruby for use in Perl.  Wasm::Wasmtime itself was heavily influrnce
 bindings for the same library.
 3. Like XS it can be very tedius to write Perl bindings for APIs with lots of functions.
 4. Although one goal of the Platypus project is to be language neutral, most libraries that you are likely to 
-write bindings for have a C interface, and C is terrible at introspection.
+write bindings for have a C interface, and C is terrible at introspection.  This means it is a challenge to
+automate binding generators.
 
 ---
 
 **libclang** could potentially reduce the tedium of writing FFI bindings
-by parsing C `.h` files for type and function declerations.
+by parsing C header files for type and function declerations.
 
 Note:
 libclang, which is an API to the clang parser could potentially reduce the tedium of writing FFI bindings
@@ -815,13 +839,14 @@ Note:
 Let me give you a sense of why by looking at this header file.
 
 1. Constants are often defined using the C pre-processor, which means the compiler (and libclang) dont even see them.
-That means if you want to introspect for constants you have to use another tool like the C pre-processor itself.
+That means if you want to introspect for constants you can't use libclang, and instead have to use another tool like
+the C pre-processor itself.
 2. For a simple function that takes basic non-pointer, non-array types you are golden, there aren't many ways this add function
 could be called.
-3. Likewise this print_string function is pretty obvious.  a const char star is usually a string, although technically it could
-be a pointer to a single eight bit byte.
+3. Likewise this print_string function is pretty clear.  A const char star is usually a NULL terminated string, although
+technically it could be a pointer to a single eight bit byte.
 4. This process_list function obviously takes a list of structs from the name, but there is no way for an automated tool to
-know that.
+know that it isn't a pointer to a single object.
 
 ---
 
@@ -839,7 +864,7 @@ know that.
 Note:
 For Wasmtime, the good news is that the most common CPUs and platforms are supported.
 Intel and Arm 64 bit, Linux, macOS and Windows.
-Unfortunately if you are on 32 bit or on a less common operating system you are out of luck.
+Unfortunately if you are on 32 bit or on a less common operating system you are out of luck.  At least for now.
 
 ---
 
@@ -854,7 +879,9 @@ Unfortunately if you are on 32 bit or on a less common operating system you are 
 </deiv>
 
 Note:
-On the other hand a lot of modern languages are supported as both hosts and guests.
+On the other hand a lot of modern languages are supported as both hosts and guests.  Another plus
+is that all of these languages have robust, fairly mature toolchains, and a lot of experienced developers
+know how to exploit them.
 
 ---
 
@@ -908,7 +935,9 @@ Note:
 
 Note:
 1. Only basic number types are supported.
-2. Strings, arrays and nested datatypes stypically require peeking into the WebAssembly's linear memory region, which at least we have access to.
+2. Strings, arrays and nested datatypes stypically require peeking into the WebAssembly's linear memory region, and
+some knowldge of the way that the guest language stores these data structures.  At least we have access to this
+memory region though.
 
 ---
 
@@ -946,11 +975,11 @@ Here is an example of how you would write some bindings to a library that takes 
 
 1. First we need to tell the C compiler which symbols should be exported using this incantation.
 2. Next we write a wrapper around the malloc
-3. and free functions so that we can call them from Perl space.
+3. and free functions so that we can allocate and free memory from Perl space.
 4. Now we have a function that takes a subject and returns a greeting to that subject.
 5. So we compute the length of the output string
 6. Allocate the memory
-7. Create the greeting from a template
+7. Create the greeting from a template using sprintf
 8. And return it.
 
 ---
@@ -1001,14 +1030,15 @@ sub greet
 ```
 
 Note:
-We aren't done yet though in Perl
+We aren't done yet though.  There is still some Perl code to write.
 
-1. This little incantation creates a perl string from a cstring, which we will need later.
+1. This little incantation creates a function cstring that converts a NULL terminated string to a Perl string.
+We will need that later.
 2. We have to allocate space for the input string in the WebAssembly memory region
 3. Copy our Perl string into WebAssembly memory
-4. Call the WebAssembly greet function
+4. Call the WebAssembly greet function.  This returns the offset of the output string.
 5. Convert the return value back into a Perl string
-6. Free the input and output strings in WebAssembly memory
+6. Free the input and output strings in WebAssembly memory, so that we don't leak memory.
 7. And finally return the greeting.
 
 ---
@@ -1063,26 +1093,33 @@ use Wasm
 ```
 
 Note:
-The next trick I want to show you is calling a Perl subroutine that takes a string from WebAssembly.  This is exactly the sort
-of thing that you need to deal with by-the-way- if you were writing a WASI implementation as I was describing earlier.
+The next trick I want to show you is calling a Perl subroutine that takes a string from WebAssembly.
 
 The thing that the callback needs to know is which memory region to read from, since there could be multiple WebAssembly modules
 in your program.
 
+This is exactly the sort of thing that you need to deal with by-the-way- if you were writing a WASI implementation as I was
+describing earlier, because a lot of WASI's functionality requires reading and writing the caller's memory region.
+
 1. For that context, we are going to import the wasm_caller_memory function, which is somewhat inspired by the Perl caller function.
-They both give us information about who is calling us.
+They both give us information about who is calling us in the current context.
 2. Next we write a function to print a wasm string.
 3. Since we can only pass numbers, we pass a memory offset
-4. We call the wasm_caller_memory function which returns the memory region that we need
-If the subroutine were called from Perl, this returns undef.
+4. We call the wasm_caller_memory function which returns the memory region that we need.
+If the subroutine happens to be called from Perl, this will give us undef.
 5. With the pointer and offset we can convert the C string to a Perl string and print it out.
 6. From the WebAssembly side we import the print_wasm_string function from the main package using the appropriate
 function signature.
-7. We use a WebAssembly data segment to store the string in, though we could also use dynamically allocated memory
+7. We use a WebAssembly data segment to store the string in.  Alternatively, we could also use dynamically allocated memory
 8. Finally we can write our run function, which calls the perl subroutine.
 
 
-After working so easily in WebAssembly with numbers, the complexity with working with strings makes just makes me want to cry.
+---
+
+Not pretty
+
+Note:
+After working so easily in WebAssembly with numbers, the complexity of working with strings makes just makes me want to cry.
 Espeically as a Perl programmer where strings are sort of our thing.
 
 ---
@@ -1090,15 +1127,22 @@ Espeically as a Perl programmer where strings are sort of our thing.
 WebAssembly **Interface Types** will allow host languages to call into WebAssembly pass strings other types without copies
 
 Note:
+There is hope though!
+
 WebAssembly Interface Types promises to address this.  Interface Types provide an extra layer inside the WebAssembly binary
-that tell the host how to translate complicated types like strings without having to make copies where possible.
+that tell the host how to translate complicated types like strings.  The current proposal converts things lazily and avoids
+copies where possible.  So it should be possible to implement this fairly efficiently.
+
+An earlier prototype of Interface Types was actually included in an earlier version of Wasmtime, but they removed it because
+the implementation was diverging from the proposal.  This was dissappointing to be sure, but good in the long run.  I think
+they will be implmenting it right rather than quickly.
 
 ---
 
 This works because most languages store strings in the same way in linear memory
 
 Note:
-This works because most languages store strings in more or less the same way in linear memory.
+All of this works because most languages store strings in more or less the same way in linear memory.
 
 ---
 
@@ -1109,10 +1153,10 @@ Objects can be stored as pointers...
 
 ---
 
-Arrays should also be doable.
+Arrays and structs should also be doable.
 
 Note:
-Arrays should also be doable.
+Arrays and structured data should also be doable.
 
 ---
 
@@ -1128,7 +1172,7 @@ say greet("Perl!");  # Hello, Perl!
 
 Note:
 With Interface Types we should be able to drop the explicit memory allocation wrappers and the Greet.pm file,
-and go back to just calling the WebAssembly from Perl.
+and go back to just calling the WebAssembly from Perl directly.
 
 ---
 
@@ -1137,7 +1181,7 @@ The interfaces for calling **WebAssembly** from Perl using **Wasm::Wasmtime** co
 Note:
 Another challenges for the current implementation of my Wasmtime bindings is that the method used to
 call and attach WebAssembly functions is probably suboptimal.  This is a hotspot that we could pretty
-easily make faster, and I say this from experience working with FFI in Perl.
+easily make faster, which would be a big benefit.  I say this from experience working with FFI in Perl.
 
 ---
 
@@ -1154,15 +1198,16 @@ say $cos->call(2.0);
 ```
 
 Note:
-FFI::Raw for example was the only game in town before Platypus.  I know pretty well because I wrote
+FFI::Raw for example was the only FFI game in town before Platypus.  I know it pretty well because I wrote
 some libarchive bindings using it in order to learn FFI.  What I learned from that process I used
 when designing Platypus.
 
 1. Anyway, FFI::Raw lets you construct an object for each C function that you want to call.
 2. Then you can call that function using the object's call method.  Seems okay?  Except method calls
 are relatively slow because at compile time we don't know what class this object belongs to, and
-therefore which exact function needs to be executed.  Which is kind of sad, because you basically
-never need to subclass FFI::Raw so you are paying this penalty for all FFI functions for now reason.
+therefore which exact function needs to be executed.  We have to instead compute all of that at runtime.
+Which is kind of sad, because you basically never need to subclass FFI::Raw so you are paying this penalty
+for all FFI functions for now reason.
 
 ---
 
@@ -1181,7 +1226,7 @@ say cos(2.0);
 Note:
 Platypus is a took a different approach.
 
-1. To start, the main object represents the library that you are calling into.  You typically only need it
+1. To start, the main object represents the library that you are calling into, not a function.  You typically only need it
 when you are building your interface, where the overhead of method calls is acceptible.
 2. You still have the option of creating and calling a function object, the flexability here comes at a performance cost.
 3. But the killer feature of Platypus is that you can attach a function as an xsub, and you get performance which is
@@ -1195,9 +1240,11 @@ close to XS.
 ```
 
 Note:
-The key to this working is the any_ptr for the xsub.  It's a pointer that you can use for anything.  I didn't come up with
-this idea, by the way.  It was BULK88 who showed me how to do this, and he was using it in Win32::API.  But I needed to
-be able to do this in non-Windows platforms so I wrote Platypus.
+The key to all of this working is the any_ptr which hangs off of an xsub.  Normally it is NULL, but we can put anything
+we want here.  In the case of Platypus, we put the metadata that libffi needs in order to make the underlying C function
+call.  I didn't come up with this technique, by the way.  It was BULK88 who showed me how to do this, and he was using the
+same technique in Win32::API.  I needed to be able to do FFI in non-Windows platforms though, which is why we have Platypus
+today.
 
 ---
 
@@ -1205,8 +1252,9 @@ be able to do this in non-Windows platforms so I wrote Platypus.
 
 Note:
 What makes sense here I think is to write some XS to implement the call and attach functionality of Func objects.
+We can use the same any_ptr technique to make attached functions quite fast.
 There really isn't any beneift to rewriting the entire API in XS.  I think it would probably be counter productive
-in fact.  This is exactly what XS is good for though, which is extending the language.
+in fact.  This is exactly what XS is good for though, which is extending the Perl programming language itself.
 
 This module should be optionally installed when a compiler is available, and a fallback to the current FFI
 implementation if it isn't.
@@ -1216,7 +1264,7 @@ implementation if it isn't.
 **Lucet** is a native WebAssembly compiler and runtime.
 
 Note:
-Another interesting piece of tech is the Lucet compiler that was developed in house at Fastly and is now
+Another interesting piece of tech I want to mention is the Lucet compiler that was developed in house at Fastly and is now
 opensource.  Lucet is a native WebAssembly compiler and runtime.
 
 ---
@@ -1262,8 +1310,12 @@ Questions?
 
 Note:
 That is all that I have for today.  If you are interested in WebAssembly, you should definitely come join us on
-that IRC #native channel, or the perlwasm github organization.  I think the WebAssembly modules that I've written
-have some limitations that would be interesting projects for those who are interested in the technology.  I'd
-welcome collabortators.  The #native channel is also good to discuss Alien and Platypus tech if that sounds interesting.
+that IRC #native channel, or the perlwasm github organization.
+
+I've discussed that the WebAssembly Perl modules that I've written have some limitations.  I think that addressing
+some of those limitations could make interesting projects for those who are interested in the technology.  I'd
+welcome collaborations to that end.
+
+The #native channel i also godo to discuss Alien and Platypus tech if that sounds interesting.
 
 Any questions?
