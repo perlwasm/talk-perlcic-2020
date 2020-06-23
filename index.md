@@ -129,23 +129,27 @@ Let's try some demos!
 
 ---
 
-<canvas id="sunset" class="dos"></canvas>
+<a href="https://plicease.github.io/hexed/" target="_hexed">HEXED.EXE running in a dos box!</a>
 
 Note:
-In high school I wrote this graphica adventure game for DOS.  It is a set in a post-apocalyptic world where the 
-sun isn't visible through the thick radioactive haze, so I naturally called it The Last Sunset.
+! Remember, to get out of full screen mode
 
-1. First we have to check under the bed with the eye icon to get our shoes
-2. Then we can leave the bunker.
-3. The game only lets you proceed at this point if you put your shoes on, and it doesn't let you get into
-the bunker again, because as a teenage game designer I was a jerk.
+In the 90s I wrote this hex editor for DOS.  I thought I was being pretty clever by calling it hexed.
+Turns out that everyone else also called their HEX editor the same thing.
 
-Anyway, you get the idea here.  On modern hardware this game only works in an enulator like Dos Box.  And
-somebody has ported Dos Box to WebAssembly and caled is js-dos.  Appropriately enough the version is 6.22!
+1. Open HEXED.EXE
+2. Press F6 to get secondary view
+3. etc..
 
-Much better and more resource intensive games can be run in the bowser this way though.  I've seen one demo of a
-WebAssembly version of Doom 3 running in the browser, and sure that game is almost 10 years old by now, but the
-3d and sound was pretty sophisticated at the time.
+Anyway, you get the idea here.  On modern hardware, this utility only works in an emulator like Dos Box.
+And somebody has happily ported Dos Box to WebAssembly and called is JS-DOS.  Appropriately enough the
+version is 6.22!  Dos Box is mostly useful for playing old games of course.  And originally I was going
+to show you one of my old video games that I also write in the 90s.  But it was a little unimpressive after
+of these years.
+
+But much better and more resource intensive games can be run in the bowser this same WebAssembly.  I've seen one
+demo of a WebAssembly version of Doom 3 running in the browser, and sure that game is almost 10 years old by now,
+but the 3d and sound was pretty sophisticated for a browser tab!
 
 ---
 
@@ -1098,3 +1102,7 @@ that IRC #native channel, or the perlwasm github organization.  The #native chan
 and Platypus tech if that sounds interesting.
 
 Any questions?
+
+
+TODO: full wasi impenentation example... of something?
+TODO: mention that Wasm::Wasmtime::XS could probably speed up calls
