@@ -24,12 +24,6 @@
       em { color: yellow; }
       p code { color: cyan; }
       sup { color: yellow; }
-
-      canvas.dos {
-        width: 640px;
-        height: 400px;
-      }
-
     </style>
     </head>
     <body>
@@ -43,11 +37,6 @@
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-    <script src="dos/js-dos.js"></script>
-    <script>
-    </script>
-
 
     <script src="webperl.js"></script>
     <script type="text/perl">
@@ -119,23 +108,6 @@
           orig(string,chan);
           $('.perl-output').append(string);
         };
-
-        var sunset_loaded = false;
-        Reveal.on('slidechanged', event => {
-          console.log("slide change = " + Reveal.getIndices().h);
-          if(Reveal.getIndices().h == 12)
-          {
-            if(!sunset_loaded)
-            {
-              Dos(document.getElementById("sunset"), { wdosboxUrl: "/dos/wdosbox.js" }).ready((fs, main) => {
-                fs.extract("dos/sunset2.zip").then(() => {
-                  main(["-c", "SUNSET.EXE"])
-                });
-              });
-              sunset_loaded = true;
-            }
-          }
-        });
 
       });
     </script>

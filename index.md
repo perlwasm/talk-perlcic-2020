@@ -355,6 +355,32 @@ filename pointing to the location of the WebAssembly binary.
 
 ---
 
+Attaching WebAssembly from Perl
+
+```perl [1-14|4-9|12|13-14]
+use Wasm::Wasmtime;
+
+my $module = Wasm::Wasmtime::Module->new( wat => q{
+  (module
+   (func (export "add") (param i32 i32) (result i32)
+     local.get 0
+     local.get 1
+     i32.add)
+  )
+});
+ 
+my $instance = Wasm::Wasmtime::Instance->new($module);
+$instance->exports->add->attach;
+say add(1,2);  # 3
+```
+
+Note:
+If you don't want to muck about with Func objects,
+
+1. then you can attach them and call them like regular subroutines.
+
+---
+
 Call Perl from WebAssembly
 
 ```perl [1-17|5-8|11-14|16-17|19]
@@ -1049,6 +1075,87 @@ and go back to just calling the WebAssembly from Perl.
 
 ---
 
+The interfaces for calling **WebAssembly** from Perl using **Wasm::Wasmtime** could be faster
+
+Note:
+Another challenges for the current implementation of my Wasmtime bindings is that the method used to
+call and attach WebAssembly functions is probably suboptimal.  This is a hotspot that we could pretty
+easily make faster, and I say this from experience working with FFI in Perl.
+
+---
+
+```perl [1-9|3-7|9]
+use FFI::Raw;
+
+my $cos = FFI::Raw->new(
+  'libm.so', 'cos',
+  FFI::Raw::double,
+  FFI::Raw::double,
+);
+
+say $cos->call(2.0);
+```
+
+Note:
+FFI::Raw for example was the only game in town before Platypus.  I know pretty well because I wrote
+some libarchive bindings using it in order to learn FFI.  What I learned from that process I used
+when designing Platypus.
+
+1. Anyway, FFI::Raw lets you construct an object for each C function that you want to call.
+2. Then you can call that function using the object's call method.  Seems okay?  Except method calls
+are relatively slow because at compile time we don't know what class this object belongs to, and
+therefore which exact function needs to be executed.  Which is kind of sad, because you basically
+never need to subclass FFI::Raw so you are paying this penalty for all FFI functions for now reason.
+
+---
+
+```perl [1-9|3|5-6|8-9]
+use FFI::Platypus 1.00;
+
+my $ffi = FFI::Platypus->new( api => 1, lib => [undef] );
+
+my $cos = $ffi->function( cos => [ 'double' ] => 'double' );
+say $cos->call(2.0);
+
+$cos->attach;
+say cos(2.0);
+```
+
+Note:
+Platypus is a took a different approach.
+
+1. To start, the main object represents the library that you are calling into.  You typically only need it
+when you are building your interface, where the overhead of method calls is acceptible.
+2. You still have the option of creating and calling a function object, the flexability here comes at a performance cost.
+3. But the killer feature of Platypus is that you can attach a function as an xsub, and you get performance which is
+close to XS.
+
+
+---
+
+```c [1]
+  self = (ffi_pl_function*) CvXSUBANY(cv).any_ptr;
+```
+
+Note:
+The key to this working is the any_ptr for the xsub.  It's a pointer that you can use for anything.  I didn't come up with
+this idea, by the way.  It was BULK88 who showed me how to do this, and he was using it in Win32::API.  But I needed to
+be able to do this in non-Windows platforms so I wrote Platypus.
+
+---
+
+**Wasm::Wasmtime::XS** anyone?
+
+Note:
+What makes sense here I think is to write some XS to implement the call and attach functionality of Func objects.
+There really isn't any beneift to rewriting the entire API in XS.  I think it would probably be counter productive
+in fact.  This is exactly what XS is good for though, which is extending the language.
+
+This module should be optionally installed when a compiler is available, and a fallback to the current FFI
+implementation if it isn't.
+
+---
+
 **Lucet** is a native WebAssembly compiler and runtime.
 
 Note:
@@ -1098,11 +1205,10 @@ Questions?
 
 Note:
 That is all that I have for today.  If you are interested in WebAssembly, you should definitely come join us on
-that IRC #native channel, or the perlwasm github organization.  The #native channel is also good to discuss Alien
-and Platypus tech if that sounds interesting.
+that IRC #native channel, or the perlwasm github organization.  I think the WebAssembly modules that I've written
+have some limitations that would be interesting projects for those who are interested in the technology.  I'd
+welcome collabortators.  The #native channel is also good to discuss Alien and Platypus tech if that sounds interesting.
 
 Any questions?
 
-
 TODO: full wasi impenentation example... of something?
-TODO: mention that Wasm::Wasmtime::XS could probably speed up calls
