@@ -800,7 +800,7 @@ automate binding generators.
 ---
 
 **libclang** could potentially reduce the tedium of writing FFI bindings
-by parsing C header files for type and function declerations.
+by parsing C header files for type and function declarations.
 
 Note:
 libclang, which is an API to the clang parser could potentially reduce the tedium of writing FFI bindings
