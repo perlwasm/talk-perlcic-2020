@@ -38,7 +38,7 @@ There are two you may have heard of (or possibly even used)
 
 Note:
 First is the Alien family of modules under the Alien-Build banner that let you declare external (non-CPAN) depdendnecies for 
-your Perl modules
+your Perl projects
 
 ---
 
@@ -94,7 +94,8 @@ inside a web browser.
 
 Note:
 And you don't have to be a wiz with C either because there are some more modern languages like Rust or Go
-that also support WebAssembly as a backend.  A lot of WebAssembly is written in Rust as it turns out.
+that also support WebAssembly as a backend.  A lot of WebAssembly and the infrastructure to build and run
+WebAssembly is written in Rust as it turns out.
 
 ---
 
@@ -109,9 +110,9 @@ Note:
 Why Wasm, and not JavaScript?  Well for CPU bound tasks it is much faster, and approaches the speed of natively compiled code.
 For another reason, you can develop your web application in a mature compiled language like Rust or C ....
 Finally, like JavaScript, WebAssembly lets you sandbox part of your application, so that you won't accdientally
-(or intentionally) take down the end user's system.  Also WebAssembly modules are easy to intropsect, since the WebAssembly
-runtime has to know it a lot of detail exactly what gets passed between the guest and host environment in order to keep
-things safe.
+(or intentionally in the case of malicious intent) take down the end user's system.  Also WebAssembly modules are easy to
+intropsect, since the WebAssembly runtime has to know all the detail of exactly what gets passed between the guest and host
+environment in order to keep things safe.
 
 ---
 
@@ -133,6 +134,10 @@ Turns out that everyone else also called their HEX editor the same thing.
 1. Open HEXED.EXE
 2. Press F6 to get secondary view
 3. etc..
+
+This program was written in Turbo Pascal 7, which I loved programming back in the days.  I was excited to
+learn this morning that Perl is going to finally surpass my beloved Turbo Pascal when it gets to
+version 8.
 
 Anyway, you get the idea here.  On modern hardware, this utility only works in an emulator like Dos Box.
 And somebody has happily ported Dos Box to WebAssembly and called is JS-DOS.  Appropriately enough the
@@ -205,8 +210,8 @@ the technology allows running untrusted code that could misbehave
 
 Note:
 WebAssembly can also be useful in server or command line applications where the sandboxed
-nature of the technology allows running untrusted code that could misbehave, assuming you
-set the appropriate resource limitations
+nature of the technology allows running untrusted code that could misbehave.  This works
+and can be relatively safe assuming you set the appropriate resource limitations
 
 ---
 
@@ -224,7 +229,8 @@ data.
 
 Previously customers could use a domain speicifc language called VCL to write their own
 custom logic at the edge, but the ability to use general purpose programming language
-and well known toolchains gives our customers a lot of flexability.
+like C, Rust or Go, and their well known toolchains gives our customers a lot of flexability
+and power.
 
 ---
 
@@ -247,10 +253,12 @@ Note:
 In persuit of this goal, I've written some modules to allow me to do that.
 
 Wasm::Wasmtime is a low level library that lets you introspect and call WebAssembly code.
+It binds to the Wasmtime runtime.
 
-Wasm.pm is a higher level interface that makes it easy to call between Perl and WebAssembly
+Wasm.pm is a higher level interface that makes it easy to call between Perl and WebAssembly without
+having to know a lot about how WebAssembly works.
 
-Finally plasm or PerL webASeMbly is a tool for poking around with and running WebAssembly binaries
+Finally plasm or PerL wASM is a tool for poking around with and running WebAssembly binaries
 from the command-line.
 
 ---
@@ -299,9 +307,11 @@ Here is a diagram of how some of the most important classes in wasmtime work.
 pages the WebAssembly requires.
 
 1. A Wasmetime instance object can be created from the module object
-2. Which we can use to actually call Func or function objects
-3. And access the WebAssembly's Memory object which gives us a data pointer and a size of the region
-4. Importantly, although we can poke around with Wasm's memory, WebAssembly cannot address memory outside of its own region
+2. This is what we use to actually call Func objects
+3. And access the WebAssembly's Memory object which gives us a data pointer and a size of the memory region used by the
+WebAssembly module instance
+4. Importantly, although we can poke around with Wasm's memory from Perl, WebAssembly cannot address memory outside of
+its own region
 
 ---
 
@@ -317,7 +327,7 @@ Note:
 Wasmtime also has a number of utility functions.  wat2wasm for example, translates WebAssembly Text into WebAssembly binary.
 We need to do this translation in order for the Wasmtime runtime to be able to execute WebAssembly.
 
-1. This is the most simple WebAssembly module possible, one that doesn't do anything.
+1. Here we are converting the most simple WebAssembly module possible, one that doesn't do anything.
 
 ---
 
